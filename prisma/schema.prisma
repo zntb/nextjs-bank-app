@@ -1,0 +1,86 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model BankAccount {
+  id            String        @id @default(cuid())
+  userId        String
+  accountNumber String        @unique
+  balance       Decimal       @default(0)
+  type          AccountType
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions  Transaction[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model Transaction {
+  id            String            @id @default(cuid())
+  amount        Decimal
+  type          TransactionType
+  description   String?
+  fromAccountId String
+  toAccountId   String?
+  fromAccount   BankAccount       @relation(fields: [fromAccountId], references: [id])
+  status        TransactionStatus @default(PENDING)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+}
+
+enum AccountType {
+  CHECKING
+  SAVINGS
+  CREDIT
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  TRANSFER
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+// Update User model
+model User {
+  id               String        @id @default(cuid())
+  name             String?
+  email            String        @unique
+  emailVerified    DateTime?
+  password         String
+  image            String?
+  role             Role          @default(USER)
+  phoneNumber      String?
+  address          String?
+  dateOfBirth      DateTime?
+  twoFactorEnabled Boolean       @default(false)
+  twoFactorSecret  String?
+  accounts         BankAccount[]
+  sessions         Session[]
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  expires      DateTime
+  sessionToken String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
